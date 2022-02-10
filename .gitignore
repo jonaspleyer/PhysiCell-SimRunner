@@ -1,0 +1,7 @@
+PhysiCellProject
+save_dir
+test/__pycache__
+test/xml_files/*
+src/__pycache__
+.vscode
+
