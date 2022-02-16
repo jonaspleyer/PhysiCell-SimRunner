@@ -61,7 +61,7 @@ Works by modifying the PhysiCell_settings.xml file, running the simulation and s
 	```
 	Add parameters that are variable or static.
 	```python
-	Cont.add_variable_param(name="x_min", param_type=float, node_structure=["domain", "x_min"], info={"bound_low":-200.0, "bound_high":-200.0}, method_name="MonteCarlo_normal")
+	Cont.add_variable_param(name="x_min", param_type=float, node_structure=["domain", "x_min"], info={"bound_low":-200.0, "bound_high":-20.0}, method_name="MonteCarlo_normal")
 	Cont.add_static_param(name="x_max", param_type=float, node_structure=["domain", "x_max"])
 	```
 	If desired add corrlated parameters and correlated them via a function. Note that the order of parameters in the function and in the `Cont.correlate_params` statement needs to match. Also the type of the output needs to match the type specified when creating the parameters.
@@ -83,6 +83,11 @@ Works by modifying the PhysiCell_settings.xml file, running the simulation and s
 	Finally run the simulations.
 	```python
 	Cont.run()
+	```
+5. Now either start the program by running one of the following commands
+	```console
+	make
+	python main.py
 	```
 
 # Links and Contact
