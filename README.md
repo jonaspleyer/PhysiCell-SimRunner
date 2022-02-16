@@ -17,6 +17,7 @@ Works by modifying the PhysiCell_settings.xml file, running the simulation and s
 - [ ] Binomial sampling
 - [ ] Latin-Hypercube sampling
 - [ ] Start/Stop/Continue Parameter Space exploration
+- [ ] Write more tests and switch from flaky get/set tests for Parameter class to more solid ones.
 
 # Limitations
 * Only xml file configuration possible. Program should be written with necessary abstraction.

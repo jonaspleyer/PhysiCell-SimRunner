@@ -31,6 +31,7 @@ class testGet(unittest.TestCase):
 			self.assertEqual(val, param.get_val())
 
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def test_get_int(self):
 		'''Write random int to a xml file and check if same values are retrieved.'''
 		file = open("test/xml_files/test_get_int.xml", "w")
@@ -48,6 +49,7 @@ class testGet(unittest.TestCase):
 			self.assertEqual(val, param.get_val())
 
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def test_get_str(self):
 		'''Write random string to a xml file and check if same values are retrieved.'''
 		file = open("test/xml_files/test_get_str.xml", "w")
@@ -65,6 +67,7 @@ class testGet(unittest.TestCase):
 			self.assertEqual(val, param.get_val())
 
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def nonotest_get_bool(self):
 		'''Write True and False booleans to a xml file and check if same values are retrieved.'''
 		file = open("test/xml_files/test_get_bool.xml", "w")
@@ -93,6 +96,7 @@ class testGet(unittest.TestCase):
 
 class testSet(unittest.TestCase):
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def test_set_float(self):
 		'''Set random floats in xml file, parse xml and compare.'''
 		filename = "test/xml_files/test_set_float.xml"
@@ -114,6 +118,7 @@ class testSet(unittest.TestCase):
 			self.assertEqual(str(val), node_text)
 
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def test_set_int(self):
 		'''Set random ints in xml file, parse xml and compare.'''
 		filename = "test/xml_files/test_set_int.xml"
@@ -135,6 +140,7 @@ class testSet(unittest.TestCase):
 			self.assertEqual(str(val), node_text)
 
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def test_set_str(self):
 		'''Set random strings in xml file, parse xml and compare.'''
 		filename = "test/xml_files/test_set_str.xml"
@@ -155,7 +161,8 @@ class testSet(unittest.TestCase):
 			node_text = ET.parse(filename).find(node_name).text
 			self.assertEqual(str(val), node_text)
 
-			
+
+	# TODO rewrite this test to not be flaky, but still cover all cases	
 	def test_set_bool(self):
 		'''Set random bools in xml file, parse xml and compare.'''
 		filename = "test/xml_files/test_set_bool.xml"
@@ -178,6 +185,7 @@ class testSet(unittest.TestCase):
 
 class testNodeStructure(unittest.TestCase):
 
+	# TODO rewrite this test to not be flaky, but still cover all cases
 	def nono_test_nodeStructure(self):
 		'''Creates different xml files with random types and introduces arbitrary errors in xml file.'''
 		# This generates a pretty random xml file for every type multiple times
@@ -239,9 +247,10 @@ class testNodeStructure(unittest.TestCase):
 
 class testUpdateFileLocations(unittest.TestCase):
 
+	# TODO write this test
+	# First set parameter to use certain file, then switch and check if get/set still works
 	def test_update_file_locations(self):
 		typs = [float, int, str, bool]
-
 
 
 if __name__ == "__main__":
