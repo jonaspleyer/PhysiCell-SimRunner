@@ -217,8 +217,8 @@ class Controller():
 		os.mkdir(save_subdir + "/logs")
 
 		# Copy relevant files
-		shutil.copyfile(xml_file, save_subdir + "/" + xml_file_name)
-		shutil.copyfile(project_binary_path, save_subdir + "/" + project_binary_name)
+		shutil.copy(xml_file, save_subdir + "/" + xml_file_name)
+		shutil.copy(project_binary_path, save_subdir + "/" + project_binary_name)
 		
 		return save_subdir
 
