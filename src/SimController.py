@@ -77,6 +77,9 @@ class Controller():
 			self.save_dir = kwargs["save_dir"]
 		else:
 			self.save_dir = "./save_dir"
+		
+		# Stores the post simulation command and tells the controller if it needs to be executed
+		self._post_sim_script_command = None
 
 
 	def add_sampler_method(self, name:str, method:SamplerMethod, init_info:dict={}):
@@ -198,7 +201,7 @@ class Controller():
 		return res
 	
 
-	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list):
+	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list, post_sim_info):
 		save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
 		while os.path.isdir(save_subdir):
 			folder_count.value += 1
@@ -213,6 +216,9 @@ class Controller():
 		# Copy relevant files
 		shutil.copy(xml_file, save_subdir + "/" + xml_file_name)
 		shutil.copy(project_binary_path, save_subdir + "/" + project_binary_name)
+		if post_sim_info != None:
+			for file_name in post_sim_info["files"]:
+				shutil.copy(post_sim_info["folder"] + "/" + file_name, save_subdir + "/" + file_name)
 		
 		return save_subdir
 
@@ -221,11 +227,10 @@ class Controller():
 		# Update the xml file and logfile in the parameters
 		for param in params:
 			param.update_file_locations(xml_file=xml_file_name, logfile="logs/param_logs.txt")
-		
+
 		# Now write params to file
 		for i, param in enumerate(params_variable_correlated):
 			param.set_val(param.param_type(comb[i]))
-
 
 	def _run_sim(self, project_binary_name:str):
 		log = open("logs/log_sim.txt", "a")
@@ -233,12 +238,35 @@ class Controller():
 		os.system("./" + project_binary_name + " > logs/log_sim.txt")
 		
 
+	def add_post_sim_script(self, script_command:str, script_file_names:list, script_folder="./user_scripts"):
+		'''Defines a script to be executed when having finished the simulation.
+		The command to run the script can be any string executed in a terminal.
+		The command is to be run as in the base folder of the PhysiCell project.
+		The list of files does have to include every file necesary to run the script.
+		Example:
+			script_command = "python generate_plots.py"
+			script_file_names = ["generate_plots.py", "plotter.py", "info_getter.py"]
+		'''
+		for file_name in script_file_names:
+			if not os.path.isfile(script_folder + "/" + file_name):
+				raise NameError("post simulation script " + self._post_sim_script_command + " could not be found.")
+		self._post_sim_script_command = script_command
+		self._post_sim_script_files = script_file_names
+		self._post_sim_script_folder = script_folder
+
 	
 	def _run_single_sim(self, task:dict):
+		# Create new subdir and change to it
 		save_subdir = self._create_file_folder_structure(**task)
 		os.chdir(save_subdir)
+		# Now write all necessary files and run the simulation
 		self._write_xml(comb=task["param_comb"], xml_file_name=task["xml_file_name"], params=task["params"], params_variable_correlated=task["params_variable_correlated"])
 		self._run_sim(task["project_binary_name"])
+		
+		# Run the post simulation script before going back to the main folder
+		if task["post_sim_info"] != None:
+			os.system(task["post_sim_info"]["command"])
+		# Now go back to the main folder
 		os.chdir(self._base_dir)
 		return 1
 
@@ -259,6 +287,11 @@ class Controller():
 				qaram = param.__copy__()
 				qarams.append(qaram)
 			
+			if self._post_sim_script_command != None:
+				post_sim_info = {"command":self._post_sim_script_command, "files":self._post_sim_script_files, "folder":self._post_sim_script_folder}
+			else:
+				post_sim_info = None
+			
 			tasks.append({
 				"param_comb":comb, 
 				"save_dir":self.save_dir, 
@@ -267,7 +300,8 @@ class Controller():
 				"project_binary_name":self._project_binary_name, 
 				"project_binary_path":self._project_binary_path, 
 				"params":qarams, 
-				"params_variable_correlated":qarams_variable_correlated
+				"params_variable_correlated":qarams_variable_correlated,
+				"post_sim_info":post_sim_info
 			})
 
 		folder_count = mp.Value('i', 0)
