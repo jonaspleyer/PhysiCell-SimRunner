@@ -196,11 +196,6 @@ class Controller():
 		params_variable_values = [param_val for i, param_val in enumerate(self._all_parameter_combinations[param_index]) if self._all_parameter_descr[i] in params_variable]
 		res = correlation_func(*params_static_values, *params_variable_values)
 		return res
-
-
-	def _write_xml(self, combination):
-		for i, param in enumerate(self.Params_single):
-			param.set(combination[i])
 	
 
 	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list):
