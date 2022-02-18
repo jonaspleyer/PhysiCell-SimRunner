@@ -199,11 +199,10 @@ class Controller():
 	
 
 	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list):
-		i = int(0)
-		save_subdir = save_dir + "/run_" + '{:0>10}'.format(i)
+		save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
 		while os.path.isdir(save_subdir):
-			i+=1
-			save_subdir = save_dir + "/run_" + '{:0>10}'.format(i)
+			folder_count.value += 1
+			save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
 		
 		# Create filestructure
 		os.mkdir(save_subdir)
@@ -271,7 +270,13 @@ class Controller():
 				"params_variable_correlated":qarams_variable_correlated
 			})
 
-		pool = mp.Pool(max(1,self.threads))
+		folder_count = mp.Value('i', 0)
+
+		def init(arg):
+			global folder_count
+			folder_count = arg
+
+		pool = mp.Pool(max(1,self.threads), initializer=init, initargs = (folder_count, ))
 		
 		with pool as p:
 			r = list(tqdm(p.imap(self._run_single_sim, tasks), total=len(tasks)))
