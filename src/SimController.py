@@ -225,12 +225,11 @@ class Controller():
 
 	def _write_xml(self, comb:tuple, xml_file_name:str, params:list, params_variable_correlated:list):
 		# Update the xml file and logfile in the parameters
-		for param in params:
+		for i, param in enumerate(params):
 			param.update_file_locations(xml_file=xml_file_name, logfile="logs/param_logs.txt")
-
-		# Now write params to file
-		for i, param in enumerate(params_variable_correlated):
+			# Now write params to file
 			param.set_val(param.param_type(comb[i]))
+
 
 	def _run_sim(self, project_binary_name:str):
 		log = open("logs/log_sim.txt", "a")
