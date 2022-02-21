@@ -12,7 +12,7 @@ Works by modifying the PhysiCell_settings.xml file, running the simulation and s
 
 # Planned Features
 - [ ] Define variable parameters which are not represented in xml file but correlate with others (eg. number of voxels)
-- [ ] Option to run post-simulation scripts to already analyze generated data
+- [x] Option to run post-simulation scripts to already analyze generated data
 - [ ] Gauss sampling
 - [ ] Binomial sampling
 - [ ] Latin-Hypercube sampling
