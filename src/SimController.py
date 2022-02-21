@@ -111,12 +111,14 @@ class Controller():
 
 
 	def add_static_param(self, name:str, param_type:type, node_structure:list, logfile:str=None):
+		'''Adds a parameter only used for information purposes and not controlled by a sampler method.'''
 		param = Parameter(param_type=param_type, xml_file=self._xml_file, node_structure=node_structure, logfile=logfile)
 		if not self._check_param_present(name, param_type, node_structure, info=None, logfile=logfile):
 			self._params_static[name] = param
 	
 
 	def add_correlated_param(self, name:str, param_type:type, node_structure:list, logfile:str=None):
+		'''Adds a parameter which will be correlated and thus obtain its value by calculation from other (stativ/variable) parameters.'''
 		param = Parameter(param_type=param_type, xml_file=self._xml_file, node_structure=node_structure, logfile=logfile)
 		if not self._check_param_present(name, param_type, node_structure, info=None):
 			self._params_correlated[name] = param
@@ -150,6 +152,7 @@ class Controller():
 
 
 	def _test_correlation_func(self, params_static:list, params_variable:list, params_result:list, correlation_func:types.FunctionType):
+		'''Ensures that the supplied function will output the correct format to match the specified correlated parameters.'''
 		params_static_values = [self._params_static[name].get_val() for name in params_static]
 		params_variable_values = [self._params_variable[name].get_val() for name in params_variable]
 		params_result_types = [self._params_correlated[name].param_type for name in params_result]
@@ -162,20 +165,38 @@ class Controller():
 
 
 	def _generate_parameters(self):
+		'''
+		This invokes the different sampler methods and generates parameter
+		configurations based on their sampling methods.
+		'''
+		# Stores the "range" of parameters
+		# Ie: [[0.0, 0.1, ... , 0.7], [0.3,0.5],[-3,1,5]]
+		# where [0.0, 0.1, ... , 0.7] corresponds to the picked
+		# values for one particular parameter
 		combined_parameter_values_list = []
+		# Will store all generated parameter pairs
 		combs = []
+		# Also store description for each parameter
 		descr = []
+		# Iterate over sampler methods and let them choose parameters
 		for s_m_name in self._sampler_methods.keys():
 			values, param_names = self._sampler_methods[s_m_name].generate_combinations()
+			# Append the generated parameter values to the list (and description)
 			combined_parameter_values_list.append(values)
 			descr.append(param_names)
+		# Create the cartesian product and flatten it (see _flatten method)
 		combs = list(itertools.product(*combined_parameter_values_list))
+		# Store results
 		self._all_parameter_combinations = [list(self._flatten(c)) for c in combs]
 		self._all_parameter_descr = list(self._flatten(descr))
 		self._generate_correlated_params()
 
 
 	def _flatten(self, L):
+		'''
+		Used to flatten generated parameter pairs if multiple sampler methods are involved.
+		Ie. go from [(1,2,3),((4),5), (6)] -> [1,2,3,4,5,6].
+		'''
 		for l in L:
 			if isinstance(l, list) or isinstance(l, tuple):
 				yield from self._flatten(l)
@@ -184,6 +205,11 @@ class Controller():
 
 
 	def _generate_correlated_params(self):
+		'''
+		Part of the parameter generation routine that calculates the determined
+		correlated parameters and adds them to the parameter list.
+		This does not increase the total amount of combinations.
+		'''
 		# Append the correlated parameters for every parameter combination which was sampled so far.
 		for i in range(len(self._all_parameter_combinations)):
 			# Those sampled entries are seperated by the methods that sampled them
@@ -195,6 +221,10 @@ class Controller():
 
 
 	def _eval_correlation_func(self, params_static:list, params_variable:list, param_index:int, correlation_func) -> list:
+		'''
+		Used to calculate the correlation function in the process to determine
+		the correlated parameters in the parameter generation routine.
+		'''
 		params_static_values = [self._params_static[p].get_val() for p in params_static]
 		params_variable_values = [param_val for i, param_val in enumerate(self._all_parameter_combinations[param_index]) if self._all_parameter_descr[i] in params_variable]
 		res = correlation_func(*params_static_values, *params_variable_values)
@@ -202,6 +232,10 @@ class Controller():
 	
 
 	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list, post_sim_info):
+		'''
+		Creates the subdirectory \"run_XXXXXXXXXX\" and \"output\", "\config\" and \"logs\"
+		folders in the subdirectory and copies relevant files to the new subdirectory.
+		'''
 		save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
 		while os.path.isdir(save_subdir):
 			folder_count.value += 1
@@ -224,6 +258,9 @@ class Controller():
 
 
 	def _write_xml(self, comb:tuple, xml_file_name:str, params:list, params_variable_correlated:list):
+		'''
+		Write the supplied parameter combination to the xml file.
+		'''
 		# Update the xml file and logfile in the parameters
 		for i, param in enumerate(params):
 			param.update_file_locations(xml_file=xml_file_name, logfile="logs/param_logs.txt")
@@ -232,8 +269,13 @@ class Controller():
 
 
 	def _run_sim(self, project_binary_name:str):
+		'''
+		Actually run the simulation and store the output of the binary in a logfile.
+		'''
+		# Create the logfile
 		log = open("logs/log_sim.txt", "a")
 		log.close()
+		# Run the simulation and store output in logfile
 		os.system("./" + project_binary_name + " > logs/log_sim.txt")
 		
 
@@ -246,15 +288,23 @@ class Controller():
 			script_command = "python generate_plots.py"
 			script_file_names = ["generate_plots.py", "plotter.py", "info_getter.py"]
 		'''
+		# First check that all files are actually there
 		for file_name in script_file_names:
 			if not os.path.isfile(script_folder + "/" + file_name):
 				raise NameError("post simulation script " + self._post_sim_script_command + " could not be found.")
+		# Not store information
 		self._post_sim_script_command = script_command
 		self._post_sim_script_files = script_file_names
 		self._post_sim_script_folder = script_folder
 
 	
 	def _run_single_sim(self, task:dict):
+		'''
+		1. Create file structure + copy files to it
+		2. Write the supplied parameter combination to the xml file.
+		3. Run the simulation and store output
+		(4.) If a post simulation script was specified, run it.
+		'''
 		# Create new subdir and change to it
 		save_subdir = self._create_file_folder_structure(**task)
 		os.chdir(save_subdir)
@@ -271,13 +321,18 @@ class Controller():
 
 
 	def run(self, output_dir="./output/"):
+		'''
+		
+		'''
 		self._generate_parameters()
 		
+		# Create list with all tasks (= Parameter combinations + information)
 		tasks = []
 		for comb in self._all_parameter_combinations:
 			qarams = []
 			qarams_variable_correlated = []
 			
+			# Create a list with all parameters in it. We have to check if parameters are variable or correlated
 			for param_name in self._all_parameter_descr:
 				if param_name in self._params_variable.keys():
 					param = self._params_variable[param_name]
@@ -286,11 +341,13 @@ class Controller():
 				qaram = param.__copy__()
 				qarams.append(qaram)
 			
+			# Check if a post simulation command was supplied and if so append its information to the task dictionary.
 			if self._post_sim_script_command != None:
 				post_sim_info = {"command":self._post_sim_script_command, "files":self._post_sim_script_files, "folder":self._post_sim_script_folder}
 			else:
 				post_sim_info = None
 			
+			# Create a task entry with all information
 			tasks.append({
 				"param_comb":comb, 
 				"save_dir":self.save_dir, 
@@ -302,14 +359,17 @@ class Controller():
 				"params_variable_correlated":qarams_variable_correlated,
 				"post_sim_info":post_sim_info
 			})
-
+		# Set the shared counter for folder name to 0
 		folder_count = mp.Value('i', 0)
 
+		# Make sure that the counter is given to all subprocesses
 		def init(arg):
 			global folder_count
 			folder_count = arg
 
+		# Create pool (with multiple processes)
 		pool = mp.Pool(max(1,self.threads), initializer=init, initargs = (folder_count, ))
-		
+
+		# Execute tasks
 		with pool as p:
 			r = list(tqdm(p.imap(self._run_single_sim, tasks), total=len(tasks)))
