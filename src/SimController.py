@@ -291,7 +291,7 @@ class Controller():
 		# First check that all files are actually there
 		for file_name in script_file_names:
 			if not os.path.isfile(script_folder + "/" + file_name):
-				raise NameError("post simulation script " + self._post_sim_script_command + " could not be found.")
+				raise NameError("post simulation script " + file_name + " could not be found.")
 		# Not store information
 		self._post_sim_script_command = script_command
 		self._post_sim_script_files = script_file_names
