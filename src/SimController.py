@@ -6,6 +6,7 @@ from tqdm import tqdm
 import types
 import shutil
 import multiprocessing as mp
+from pathlib import Path
 
 # Import custom modules
 from src.Parameter import Parameter
@@ -39,24 +40,56 @@ class Controller():
 		# These methods also store their respective parameters
 		self._sampler_methods = {}
 
-		# Where is the project and its definition xml saved
-		# TODO at beginning read xml file and then never again to avoid conflicts
-		# modify parameter class to then alter memory-stored xml_file contents
-		self._project_folder = project_folder.strip("./ ")
-		self._xml_file_name = xml_file.strip("./ ")
-		self._xml_file = self._project_folder + "/" + xml_file.strip("./ ")
-		# To come back after single simulations are done in the subdirs
-		self._base_dir = os.getcwd()
-
-		# Which project binary should be executed
-		self._project_binary_name = project_binary_name.strip("./ ")
-		self._project_binary_path = self._project_folder + "/" + project_binary_name.strip("./ ")
-		
 		# Store the parameters to distribute to different simulation runs
 		self._all_parameter_combinations = []
 		self._all_parameter_descr = []
 
+		self._define_file_and_folder_values(project_folder, project_binary_name, xml_file, additional_files)
+
 		self._parse_args(**kwargs)
+
+
+	def _define_file_and_folder_values(self, project_folder:str, project_binary_name:str, xml_file:str, additional_files:list):
+		'''Called in init function to check and configure input file/folder names.
+		Ensure that all files/folders are present and have correct permissions.'''
+		# Check project_folder input
+		self._project_folder = Path(project_folder)
+		if not self._project_folder.is_dir():
+			raise FileNotFoundError("Could not find " + project_folder + " anywhere. Evaluate input folder and its location.")
+		
+		# Where is the project and its definition xml saved
+		# TODO at beginning read xml file and then never again to avoid conflicts
+		# modify parameter class to then alter memory-stored xml_file contents
+
+		# Check the xml input path
+		xml_input = Path(xml_file)
+		xml_input_path = self._project_folder / xml_input
+		if xml_input_path.is_file():
+			self._xml_file_name = xml_input#- self._project_folder
+			self._xml_file_path = xml_input_path
+			# self._project_folder / xml_file.strip("./ ")
+		elif xml_input.is_file():
+			self._xml_file_name = xml_input# - Path.cwd()
+			self._xml_file_path = xml_input
+			# xml_input / self._project_folder
+		else:
+			raise FileNotFoundError("Could not find " + xml_file + " anywhere. Evaluate input file and its location.")
+		
+		# To come back after single simulations are done in the subdirs
+		self._base_dir = Path.cwd()
+
+		# Which project binary should be executed
+		bin_input = Path(project_binary_name)
+		bin_input_path = Path(project_folder) / bin_input
+		if bin_input_path.is_file():
+			self._project_binary_name = bin_input_path.name
+			self._project_binary_path = bin_input_path
+		elif bin_input.is_file():
+			self._project_binary_path = bin_input
+			self._project_binary_name = bin_input.name
+		else:
+			raise FileNotFoundError("Could not find " + project_binary_name + " anywhere. Evaluate input file and its location.")
+		
 
 
 	def _parse_args(self, **kwargs):
@@ -94,16 +127,16 @@ class Controller():
 			self._sampler_methods[name] = m
 
 	
-	def _check_param_present(self, name:str, param_type:type, node_structure:list, info:dict=None, method_name:str=None, logfile:str=None):
+	def _check_param_present(self, name:str, param_type:type, node_structure:list, info:dict=None, method_name:str=None, logfile:Path=None):
 		if method_name !=None and not method_name in self._sampler_methods.keys():
 			raise KeyError("Please add a sampler method with the name " + str(method_name) + " before adding parameters to it.")
 		if name in self._params_variable.keys() or name in self._params_static.keys() or name in self._params_correlated.keys():
 			raise NameError("parameter with name " + str(name) + " was alreayd specified")
 
 
-	def add_variable_param(self, name:str, param_type:type, node_structure:list, info:dict, method_name:str, logfile:str=None):
+	def add_variable_param(self, name:str, param_type:type, node_structure:list, info:dict, method_name:str, logfile:Path=None):
 		'''Adds a parameter with given values to iterate over in simulation.'''
-		param = Parameter(param_type=param_type, xml_file=self._xml_file, node_structure=node_structure, logfile=logfile)
+		param = Parameter(param_type=param_type, xml_file=self._xml_file_path, node_structure=node_structure, logfile=logfile)
 		self._check_param_present(name, param_type, node_structure, info, method_name, logfile)
 		samplerMethod = self._sampler_methods[method_name]
 		samplerMethod.add_param(param_name=name, param=param, info=info)
@@ -112,14 +145,14 @@ class Controller():
 
 	def add_static_param(self, name:str, param_type:type, node_structure:list, logfile:str=None):
 		'''Adds a parameter only used for information purposes and not controlled by a sampler method.'''
-		param = Parameter(param_type=param_type, xml_file=self._xml_file, node_structure=node_structure, logfile=logfile)
+		param = Parameter(param_type=param_type, xml_file=self._xml_file_path, node_structure=node_structure, logfile=logfile)
 		if not self._check_param_present(name, param_type, node_structure, info=None, logfile=logfile):
 			self._params_static[name] = param
 	
 
-	def add_correlated_param(self, name:str, param_type:type, node_structure:list, logfile:str=None):
+	def add_correlated_param(self, name:str, param_type:type, node_structure:list, logfile:Path=None):
 		'''Adds a parameter which will be correlated and thus obtain its value by calculation from other (stativ/variable) parameters.'''
-		param = Parameter(param_type=param_type, xml_file=self._xml_file, node_structure=node_structure, logfile=logfile)
+		param = Parameter(param_type=param_type, xml_file=self._xml_file_path, node_structure=node_structure, logfile=logfile)
 		if not self._check_param_present(name, param_type, node_structure, info=None):
 			self._params_correlated[name] = param
 
@@ -231,44 +264,43 @@ class Controller():
 		return res
 	
 
-	def _create_file_folder_structure(self, param_comb:tuple, save_dir:str, xml_file_name:str, xml_file:str, project_binary_name:str, project_binary_path:str, params:list, params_variable_correlated:list, post_sim_info):
+	def _create_file_folder_structure(self, param_comb:tuple, save_dir:Path, xml_file_name:Path, xml_file:Path, project_binary_name:Path, project_binary_path:Path, params:list, params_variable_correlated:list, post_sim_info):
 		'''
 		Creates the subdirectory \"run_XXXXXXXXXX\" and \"output\", "\config\" and \"logs\"
 		folders in the subdirectory and copies relevant files to the new subdirectory.
 		'''
-		save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
+		save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count.value))
 		while os.path.isdir(save_subdir):
 			folder_count.value += 1
-			save_subdir = save_dir + "/run_" + '{:0>10}'.format(folder_count.value)
+			save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count.value))
 		
 		# Create filestructure
 		os.mkdir(save_subdir)
-		os.mkdir(save_subdir + "/output")
-		os.mkdir(save_subdir + "/config")
-		os.mkdir(save_subdir + "/logs")
+		os.mkdir(save_subdir / Path("output"))
+		(save_subdir / xml_file_name).parents[0].mkdir(parents=True)
+		os.mkdir(save_subdir / Path("logs"))
 
 		# Copy relevant files
-		shutil.copy(xml_file, save_subdir + "/" + xml_file_name)
-		shutil.copy(project_binary_path, save_subdir + "/" + project_binary_name)
+		shutil.copy(xml_file, save_subdir / xml_file_name)
+		shutil.copy(project_binary_path, save_subdir / project_binary_name)
 		if post_sim_info != None:
 			for file_name in post_sim_info["files"]:
-				shutil.copy(post_sim_info["folder"] + "/" + file_name, save_subdir + "/" + file_name)
-		
+				shutil.copy(Path(post_sim_info["folder"]) / file_name, save_subdir / file_name)
 		return save_subdir
 
 
-	def _write_xml(self, comb:tuple, xml_file_name:str, params:list, params_variable_correlated:list):
+	def _write_xml(self, comb:tuple, xml_file_name:Path, params:list, params_variable_correlated:list):
 		'''
 		Write the supplied parameter combination to the xml file.
 		'''
 		# Update the xml file and logfile in the parameters
 		for i, param in enumerate(params):
-			param.update_file_locations(xml_file=xml_file_name, logfile="logs/param_logs.txt")
+			param.update_file_locations(xml_file=xml_file_name, logfile=Path("logs/param_logs.txt"))
 			# Now write params to file
 			param.set_val(param.param_type(comb[i]))
 
 
-	def _run_sim(self, project_binary_name:str):
+	def _run_sim(self, project_binary_name:Path):
 		'''
 		Actually run the simulation and store the output of the binary in a logfile.
 		'''
@@ -352,7 +384,7 @@ class Controller():
 				"param_comb":comb, 
 				"save_dir":self.save_dir, 
 				"xml_file_name":self._xml_file_name, 
-				"xml_file":self._xml_file, 
+				"xml_file":self._xml_file_path, 
 				"project_binary_name":self._project_binary_name, 
 				"project_binary_path":self._project_binary_path, 
 				"params":qarams, 

@@ -3,6 +3,7 @@
 import xml.etree.ElementTree as ET
 import warnings
 import os
+from pathlib import Path
 
 # TODO add a option to have a parameter not be represented in the xml file
 # Example: number of voxels:
@@ -14,7 +15,7 @@ import os
 
 # Parameter class to get and set attributes in xml file
 class Parameter():
-	def __init__(self, param_type:type, xml_file:str, node_structure:list, logfile:str=None):
+	def __init__(self, param_type:type, xml_file:Path, node_structure:list, logfile:Path=None):
 		self.param_type = param_type
 		supported_types = [int, float, str, bool]
 		if not param_type in supported_types:
@@ -29,7 +30,7 @@ class Parameter():
 	def _update_tree(self):
 		self.node = self._locate_node_in_xml(self.xml_file, self.node_structure)
 
-	def _load_node_structure(self, xml_file):
+	def _load_node_structure(self, xml_file:Path):
 		'''Tests if the xml file has obvious errors and loads the tree if valid.'''
 		try:
 			self.tree = ET.parse(xml_file)
@@ -145,7 +146,7 @@ class Parameter():
 		self.tree.write(self.xml_file)
 		if self.logfile != None:
 			logfile = open(self.logfile, "a")
-			print("[param_set] Set parameter of type " + str(self.param_type) + " with node structure " + str(self.node_structure) + " in xml_file \"" + self.xml_file + "\" to " + str(value), file=logfile)
+			print("[param_set] Set parameter of type " + str(self.param_type) + " with node structure " + str(self.node_structure) + " in xml_file \"" + str(self.xml_file) + "\" to " + str(value), file=logfile)
 			logfile.close()
 
 
@@ -165,7 +166,7 @@ class Parameter():
 				raise ValueError("could not identify if input " + str(s) + " is True of False")
 
 
-	def update_file_locations(self, xml_file:str, logfile:str=None):
+	def update_file_locations(self, xml_file:Path, logfile:Path=None):
 		self.xml_file = xml_file
 		# if not logfile == None:
 		self.logfile = logfile
