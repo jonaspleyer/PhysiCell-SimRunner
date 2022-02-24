@@ -21,7 +21,7 @@ from src.SamplerMethods import MonteCarlo_normal, Linear, SamplerMethod
 # Make sure to only copy non-output files
 
 class Controller():
-	def __init__(self, project_folder:str, project_binary_name:str, xml_file:str, **kwargs):
+	def __init__(self, project_folder:str, project_binary_name:str, xml_file:str, additional_files=[], **kwargs):
 		# Only read these parameters
 		self._params_static = {}
 		# Change and write these parameters
@@ -90,6 +90,18 @@ class Controller():
 		else:
 			raise FileNotFoundError("Could not find " + project_binary_name + " anywhere. Evaluate input file and its location.")
 		
+		# Define which additional files should be copied which might not be post-sim
+		# # files but neccessary for running the simulation or something else
+		self.additional_files = []
+		for filename in additional_files:
+			f = Path(filename)
+			f_path = self._project_folder / f
+			if f.is_file():
+				self.additional_files.append(f)
+			elif (f_path).is_file():
+				self.additional_files.append(f_path)
+			else:
+				raise FileNotFoundError("Could not find " + filename + " anywhere. Evaluate input file and its location.")
 
 
 	def _parse_args(self, **kwargs):
