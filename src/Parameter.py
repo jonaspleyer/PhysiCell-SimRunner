@@ -152,11 +152,11 @@ class Parameter():
 
 	def get_val(self):
 		'''Gets the value of the parameter in the xml file.'''
+		self._update_tree()
 		if self.param_type != bool:
 			return self.param_type(self.node.text)
 		# This has to be inserted since bool("False")=True in python
 		else:
-			self._update_tree()
 			s = self.node.text.strip(" ")
 			if s == "True" or s == "true" or s == "TRUE" or s == "1":
 				return True
