@@ -24,7 +24,7 @@ class Parameter():
 		self.xml_file = xml_file
 		self.logfile = logfile
 		self.node_structure = node_structure
-		self.node = self._locate_node_in_xml(xml_file=xml_file, node_structure=node_structure, logfile=logfile)
+		self.node = self._locate_node_in_xml(xml_file=xml_file, node_structure=node_structure, logfile_name=logfile)
 
 
 	def _update_tree(self):
@@ -90,15 +90,15 @@ class Parameter():
 		return node_name, index, attributes
 
 
-	def _locate_node_in_xml(self, xml_file:str, node_structure:list, logfile:str=None):
+	def _locate_node_in_xml(self, xml_file:Path, node_structure:list, logfile_name:Path=None):
 		'''Locates node in xml file. The node structure can consist of a simple string 
 		(will use first node matching) or a dictionary specifying index or attributes 
 		if multiple nodes with identical tags are present.'''
-		if logfile == None:
-			logfile = open(os.devnull, "a")
+		if logfile_name == None:
+			logfile_file = open(os.devnull, "a")
 		else:
-			logfile = open(logfile, "a")
-		print("[node-search] Locating node for parameter of type " + str(self.param_type) + " and node_structure [" + ' -> '.join([str(n) for n in node_structure]) + "]", file=logfile)
+			logfile_file = open(logfile_name, "a")
+		print("[node-search] Locating node for parameter of type " + str(self.param_type) + " and node_structure [" + ' -> '.join([str(n) for n in node_structure]) + "]", file=logfile_file)
 		node = self._load_node_structure(xml_file=xml_file)
 		for entry in node_structure:
 			node_name, index, attributes = self._getNode_entry_info(entry)
@@ -107,11 +107,11 @@ class Parameter():
 			nodes = node.findall(node_name)
 			# Print to logfile if specified
 			for n in nodes:
-				print("[node-search] Found Tags: ", n.tag, file=logfile)
-				print("[node-search] Node Name:  ", node_name, file=logfile)
-				print("[node-search] Index:      ", index, file=logfile)
-				print("[node-search] Attributes: ", attributes, file=logfile)
-				print("[node-search] Node Attr:  ", n.attrib, file=logfile)
+				print("[node-search] Found Tags: ", n.tag, file=logfile_file)
+				print("[node-search] Node Name:  ", node_name, file=logfile_file)
+				print("[node-search] Index:      ", index, file=logfile_file)
+				print("[node-search] Attributes: ", attributes, file=logfile_file)
+				print("[node-search] Node Attr:  ", n.attrib, file=logfile_file)
 			# First test if we find any nodes at all
 			if len(nodes) == 0:
 				raise ValueError("node_name \"" + str(node_name) + "\" invalid. No matching nodes found.")
@@ -131,9 +131,9 @@ class Parameter():
 			elif len(nodes) > 1:
 				node = nodes[0]
 				warnings.warn("No index or attribute dict supplied. Automatically chose entry 0 of " + str(len(nodes)) + " total entries.")
-			print("[node-search] Selected node ", node.tag, node.attrib, file=logfile)
-		print("", file=logfile)
-		logfile.close()
+			print("[node-search] Selected node ", node.tag, node.attrib, file=logfile_file)
+		print("", file=logfile_file)
+		logfile_file.close()
 		return node
 
 
@@ -172,7 +172,7 @@ class Parameter():
 		self.logfile = logfile
 		
 		self._load_node_structure(xml_file)
-		self.node = self._locate_node_in_xml(xml_file=xml_file, node_structure=self.node_structure, logfile=logfile)
+		self.node = self._locate_node_in_xml(xml_file=xml_file, node_structure=self.node_structure, logfile_name=logfile)
 	
 
 	def __copy__(self):
