@@ -393,13 +393,13 @@ class Controller():
 			
 			# Create a task entry with all information
 			tasks.append({
-				"param_comb":comb, 
-				"save_dir":self.save_dir, 
-				"xml_file_name":self._xml_file_name, 
-				"xml_file":self._xml_file_path, 
-				"project_binary_name":self._project_binary_name, 
-				"project_binary_path":self._project_binary_path, 
-				"params":qarams, 
+				"param_comb":comb,
+				"save_dir":self.save_dir,
+				"xml_file_name":self._xml_file_name,
+				"xml_file":self._xml_file_path,
+				"project_binary_name":self._project_binary_name,
+				"project_binary_path":self._project_binary_path,
+				"params":qarams,
 				"params_variable_correlated":qarams_variable_correlated,
 				"post_sim_info":post_sim_info
 			})
