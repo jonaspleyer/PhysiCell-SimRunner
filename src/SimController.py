@@ -276,15 +276,14 @@ class Controller():
 		return res
 	
 
-	def _create_file_folder_structure(self, param_comb:tuple, save_dir:Path, xml_file_name:Path, xml_file:Path, project_binary_name:Path, project_binary_path:Path, params:list, params_variable_correlated:list, post_sim_info):
+	def _create_file_folder_structure(self, param_comb:tuple, save_dir:Path, xml_file_name:Path, xml_file:Path, project_binary_name:Path, project_binary_path:Path, params:list, params_variable_correlated:list, post_sim_info, folder_count):
 		'''
 		Creates the subdirectory \"run_XXXXXXXXXX\" and \"output\", "\config\" and \"logs\"
 		folders in the subdirectory and copies relevant files to the new subdirectory.
 		'''
-		save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count.value))
+		save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count))
 		while os.path.isdir(save_subdir):
-			folder_count.value += 1
-			save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count.value))
+			save_subdir = save_dir / Path("run_" + '{:0>10}'.format(folder_count))
 		
 		# Create filestructure
 		os.mkdir(save_subdir)
@@ -372,7 +371,7 @@ class Controller():
 		
 		# Create list with all tasks (= Parameter combinations + information)
 		tasks = []
-		for comb in self._all_parameter_combinations:
+		for k, comb in enumerate(self._all_parameter_combinations):
 			qarams = []
 			qarams_variable_correlated = []
 			
@@ -401,18 +400,12 @@ class Controller():
 				"project_binary_path":self._project_binary_path,
 				"params":qarams,
 				"params_variable_correlated":qarams_variable_correlated,
-				"post_sim_info":post_sim_info
+				"post_sim_info":post_sim_info,
+				"folder_count":k
 			})
-		# Set the shared counter for folder name to 0
-		folder_count = mp.Value('i', 0)
-
-		# Make sure that the counter is given to all subprocesses
-		def init(arg):
-			global folder_count
-			folder_count = arg
 
 		# Create pool (with multiple processes)
-		pool = mp.Pool(max(1,self.threads), initializer=init, initargs = (folder_count, ))
+		pool = mp.Pool(max(1,self.threads))
 
 		# Execute tasks
 		with pool as p:
